@@ -14,49 +14,50 @@ from data.build import buildLoader
 from modeling.build import buildModel
 from solver.build import getOptim
 from solver.lr_schduler import adjust_lr
+from engine.trainer import Train
 from utils.tools import timeConvert, getDevice
 
 
-def Train(ep):
-    model.train()
-    train_loss = 0.0
-    correct = 0
-    total = 0
-    for ix, sample in enumerate(trainloader):
-        opt.zero_grad()
-        # get data and label from loader
-        data = []
-        label = []
-        for t in sample:  # ensure order
-            data.append(sample[t]["image"])
-            label.append(sample[t]["label"])
-        # concat data and label
-        data = torch.cat(data, 0)
-        label = torch.cat(label, 0)
-        data, label = data.cuda(), label.cuda()
-        output = model(data)
-        loss = criterion(output, label)
-        loss.backward()
-        opt.step()
-        lr = adjust_lr(
-            opt=opt,
-            it=(ep - 1) * len(trainloader) + ix,
-            lr_init=args.lr,
-            lr_end=1e-6,
-            total_it=args.epoch * len(trainloader),
-            warmup=0
-        )
-        train_loss += loss.item()
-        _, predict = output.max(1)
-        total += label.size(0)
-        correct += predict.eq(label).sum().item()
-        if (ix + 1) % 100 == 0:
-            print("Learning Rate: {}".format(lr))
-            print("L-train loss:{} / L-acc:{}".format(
-                train_loss / (ix + 1),
-                100 * correct / total))
-    record["train_loss"].append(train_loss / (ix + 1))
-    record["train_acc"].append(100 * correct / total)
+# def Train(ep):
+#     model.train()
+#     train_loss = 0.0
+#     correct = 0
+#     total = 0
+#     for ix, sample in enumerate(trainloader):
+#         opt.zero_grad()
+#         # get data and label from loader
+#         data = []
+#         label = []
+#         for t in sample:  # ensure order
+#             data.append(sample[t]["image"])
+#             label.append(sample[t]["label"])
+#         # concat data and label
+#         data = torch.cat(data, 0)
+#         label = torch.cat(label, 0)
+#         data, label = data.cuda(), label.cuda()
+#         output = model(data)
+#         loss = criterion(output, label)
+#         loss.backward()
+#         opt.step()
+#         lr = adjust_lr(
+#             opt=opt,
+#             it=(ep - 1) * len(trainloader) + ix,
+#             lr_init=args.lr,
+#             lr_end=1e-6,
+#             total_it=args.epoch * len(trainloader),
+#             warmup=0
+#         )
+#         train_loss += loss.item()
+#         _, predict = output.max(1)
+#         total += label.size(0)
+#         correct += predict.eq(label).sum().item()
+#         if (ix + 1) % 100 == 0:
+#             print("Learning Rate: {}".format(lr))
+#             print("L-train loss:{} / L-acc:{}".format(
+#                 train_loss / (ix + 1),
+#                 100 * correct / total))
+#     record["train_loss"].append(train_loss / (ix + 1))
+#     record["train_acc"].append(100 * correct / total)
 
 
 def Test():
@@ -126,7 +127,8 @@ if __name__ == "__main__":
         s = time.time()
         print("========== [Training] ==========")
         print("[epoch {}/{}]".format(i, args.epoch))
-        Train(ep=i)
+        # Train(ep=i)
+        Train(args, i, trainloader, model, opt, adjust_lr, criterion, record)
         print("========== [Testing] ==========")
         test_acc = Test()
         if test_acc > best_acc:

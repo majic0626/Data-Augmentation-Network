@@ -1,3 +1,6 @@
+import torch
+
+
 # this file contains the train loop
 def Train(args, ep, trainloader, model, opt, adjust_lr, criterion, record):
     model.train()
