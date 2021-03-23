@@ -19,78 +19,6 @@ from engine.tester import Test
 from utils.tools import timeConvert, getDevice
 
 
-# def Train(ep):
-#     model.train()
-#     train_loss = 0.0
-#     correct = 0
-#     total = 0
-#     for ix, sample in enumerate(trainloader):
-#         opt.zero_grad()
-#         # get data and label from loader
-#         data = []
-#         label = []
-#         for t in sample:  # ensure order
-#             data.append(sample[t]["image"])
-#             label.append(sample[t]["label"])
-#         # concat data and label
-#         data = torch.cat(data, 0)
-#         label = torch.cat(label, 0)
-#         data, label = data.cuda(), label.cuda()
-#         output = model(data)
-#         loss = criterion(output, label)
-#         loss.backward()
-#         opt.step()
-#         lr = adjust_lr(
-#             opt=opt,
-#             it=(ep - 1) * len(trainloader) + ix,
-#             lr_init=args.lr,
-#             lr_end=1e-6,
-#             total_it=args.epoch * len(trainloader),
-#             warmup=0
-#         )
-#         train_loss += loss.item()
-#         _, predict = output.max(1)
-#         total += label.size(0)
-#         correct += predict.eq(label).sum().item()
-#         if (ix + 1) % 100 == 0:
-#             print("Learning Rate: {}".format(lr))
-#             print("L-train loss:{} / L-acc:{}".format(
-#                 train_loss / (ix + 1),
-#                 100 * correct / total))
-#     record["train_loss"].append(train_loss / (ix + 1))
-#     record["train_acc"].append(100 * correct / total)
-
-
-# def Test():
-#     model.eval()
-#     total = 0
-#     correct = 0
-#     test_loss = 0.0
-#     with torch.no_grad():
-#         for ix, sample in enumerate(testloader):
-#             data = []
-#             label = []
-#             for t in sample:  # ensure the order
-#                 data.append(sample[t]["image"])
-#                 label.append(sample[t]["label"])
-#             data = torch.cat(data, 0)
-#             label = torch.cat(label, 0)
-#             data = data.cuda()
-#             label = label.cuda()
-#             output = model(data)
-#             loss = criterion(output, label)
-#             test_loss += loss.item()
-#             _, predict = output.max(1)
-#             total += label.size(0)
-#             correct += predict.eq(label).sum().item()
-#         print("L-test loss:{} / L-acc:{}".format(
-#             test_loss / (ix + 1),
-#             100 * correct / total))
-#         record["test_loss"].append(test_loss / (ix + 1))
-#         record["test_acc"].append(100 * correct / total)
-#     return 100 * correct / total
-
-
 def record_saver(record, path):
     with open(path, 'w') as f:
         json.dump(record, f)
@@ -128,18 +56,9 @@ if __name__ == "__main__":
         s = time.time()
         print("========== [Training] ==========")
         print("[epoch {}/{}]".format(i, args.epoch))
-        # Train(ep=i)
         Train(args, i, trainloader, model, opt, adjust_lr, criterion, record)
         print("========== [Testing] ==========")
-        # test_acc = Test()
         Test(args, i, testloader, model, criterion, record, best_acc)
-        # if test_acc > best_acc:
-        #     print("save the new best model: {} || old best model: {}".format(test_acc, best_acc))
-        #     best_acc = test_acc
-        #     torch.save({"cnn": model.state_dict(), "epoch": i}, args.dir_save_ckpt + '/' + "best.pt")
-        # print("save the last model: {} || best model: {}".format(test_acc, best_acc))
-        # torch.save({"cnn": model.state_dict(), "epoch": i}, args.dir_save_ckpt + '/' + "last.pt")
-        # record_saver(record, args.dir_save_log + '/' + "clf.txt")
         e = time.time()
         t_cost = e - s
         hc, mc, sc = timeConvert(t_cost)  # h:m:s cost
