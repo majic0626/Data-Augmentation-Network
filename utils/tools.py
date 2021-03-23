@@ -35,3 +35,9 @@ def getDevice():
     # return device the computer will use
     return torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
+
+def record_saver(record, path):
+    with open(path, 'w') as f:
+        json.dump(record, f)
+
+
