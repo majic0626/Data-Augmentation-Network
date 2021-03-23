@@ -53,20 +53,20 @@ def buildLoader(args, mode):
     elif mode == 'syn':
         dataName = args.data_root.split('/')[-1]
         # dataset for out-of-distribution data
-        testset = SyntheticDataset(
+        synset = SyntheticDataset(
             dataName=dataName,
             num_examples=10000,
-            transforms=AugDict,
+            transforms=aug,
             size=args.imgSize
         )
 
         # loader for out-of-distribution data
-        testloader = DataLoader(
-            testset,
+        synloader = DataLoader(
+            synset,
             batch_size=args.batch,
             shuffle=True,
             num_workers=args.worker
         )
 
-        return testloader
+        return synloader
         
