@@ -16,7 +16,7 @@ from collections import OrderedDict
 from data.augment import Rot
 from torch.utils.data import DataLoader
 from modeling.build import buildModel
-from metric import FPR, AUPR_Out, AUROC, DetectErr
+from utils.metric import FPR, AUPR_Out, AUROC, DetectErr
 
 
 def validate_assumption(score, name):
@@ -60,32 +60,6 @@ def histogram(score):
     n1, _, _ = plt.hist(score, bins=np.arange(0, 1.2, 0.2), density=False, facecolor='g', alpha=0.5)
     plt.close()
     return n1
-
-
-def barchart(score_dict, fname):
-    """
-    score_dict
-    fname: name for figure (ex: MSP_cifar10.png)
-    """
-    for k in score_dict:
-        score_dict[k] = score_dict[k] / score_dict[k].sum()
-    labels = [str(round(x, 1)) for x in np.arange(0, 1, 0.2)]
-    x = np.arange(len(labels))
-    width = 0.10
-
-    fig, ax = plt.subplots()
-    ini = x - (len(score_dict) - 1) * (width / 2)
-    for i, k in enumerate(score_dict):
-        _ = ax.bar(ini + i * width, score_dict[k], width, label=k)
-
-    ax.set_ylabel('fraction')
-    ax.set_xlabel('confidence score')
-    ax.set_xticks(x)
-    ax.set_xticklabels(labels)
-    ax.legend()
-    plt.savefig(fname)
-    # plt.show()
-    plt.close()
 
 
 def CreateDataLoader(dataName):
@@ -238,8 +212,10 @@ if __name__ == "__main__":
     device = getDevice()
     model = buildModel(args)
 
+    # uncomment the following for load weights
     # ckpt = torch.load(args.ckpt)  # checkpoint
     # model.load_state_dict(ckpt["cnn"])  # load weights
+
     model.to(device)  # model to gpu
     criterion = nn.CrossEntropyLoss()  # loss funcution
     AugName = []
@@ -289,7 +265,6 @@ if __name__ == "__main__":
             DetResult[d]["aupr"][i] = aupr
             DetResult[d]["fpr"][i] = fpr
             DetResult[d]["deterr"][i] = deterr
-            # all_score[d] = histogram(score_out)
             scores_assumption['out'] += list(score_out)
 
     # test for out-of-distribution detection performance for synthetic dataset
@@ -315,11 +290,7 @@ if __name__ == "__main__":
             DetResult[d]["aupr"][i] = aupr
             DetResult[d]["fpr"][i] = fpr
             DetResult[d]["deterr"][i] = deterr
-            # all_score[d] = histogram(score_out)
             scores_assumption['out'] += list(score_out)
-
-    # plot bar chart for score of all dataset (including in- and out- dataset)
-    # barchart(score_dict=all_score, fname="{}_{}.png".format(args.method, IndataName))
 
     # init "avg"
     DetResult["avg"] = {"auroc": 0.0,
