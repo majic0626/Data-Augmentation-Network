@@ -40,5 +40,6 @@ def Train(args, ep, trainloader, model, opt, adjust_lr, criterion, record):
             print("L-train loss:{} / L-acc:{}".format(
                 train_loss / (ix + 1),
                 100 * correct / total))
+        break
     record["train_loss"].append(train_loss / (ix + 1))
     record["train_acc"].append(100 * correct / total)

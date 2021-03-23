@@ -16,9 +16,6 @@ def visualize(loader, path, size=8):
         return None
 
 
-
-
-
 def timeConvert(s):
     """
     return hour:minute:second by given second
@@ -36,7 +33,7 @@ def getDevice():
     return torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
-def record_saver(record, args):
+def record_saver(args, record):
     with open(args.dir_save_log, 'w') as f:
         json.dump(record, f)
 
