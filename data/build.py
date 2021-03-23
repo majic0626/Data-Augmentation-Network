@@ -1,5 +1,6 @@
 # build dataloader for training or testing
 from data.dataset import MultiAugmentDataset
+from data.dataset import SyntheticDataset
 from data.augment import Rot
 from torch.utils.data import DataLoader
 from collections import OrderedDict
@@ -29,7 +30,7 @@ def buildLoader(args, mode):
         )
 
         return trainloader
-    else:
+    elif mode == 'test':
         # dataset for testing data
         testset = MultiAugmentDataset(
             root_dir=args.data_root + '/' + 'test',
@@ -44,6 +45,26 @@ def buildLoader(args, mode):
             testset,
             batch_size=200,
             shuffle=False,
+            num_workers=args.worker
+        )
+
+        return testloader
+    
+    elif mode == 'syn':
+        dataName = args.data_root.split('/')[-1]
+        # dataset for out-of-distribution data
+        testset = SyntheticDataset(
+            dataName=dataName,
+            num_examples=10000,
+            transforms=AugDict,
+            size=args.imgSize
+        )
+
+        # loader for out-of-distribution data
+        testloader = DataLoader(
+            testset,
+            batch_size=args.batch,
+            shuffle=True,
             num_workers=args.worker
         )
 

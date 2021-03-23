@@ -7,13 +7,15 @@
 import torch
 import torch.nn as nn
 import numpy as np
-import argparse
+from configs.detection_config import det_cfg
+from utils.tools import getDevice
+from data.build import buildLoader
+from modeling.build import buildModel
 import matplotlib.pyplot as plt
 from collections import OrderedDict
-from dataset import MultiAugmentDataset, SyntheticDataset
-from Augment import Rot
+from data.augment import Rot
 from torch.utils.data import DataLoader
-from models import WideResNet
+from modeling.build import buildModel
 from metric import FPR, AUPR_Out, AUROC, DetectErr
 
 
@@ -88,28 +90,12 @@ def barchart(score_dict, fname):
 
 def CreateDataLoader(dataName):
     '''
-    create a in-distribution dataloader e.g. cifar10
+    create a in-distribution or out-of-distribution dataloader e.g. cifar10 / svhn...
 
     '''
     root = '/usr/share/dataset'
-    # dataset for in-distribution data
-    testset = MultiAugmentDataset(
-        root_dir=root + '/' + dataName + '/' + 'test',
-        class_file=root + '/' + dataName + '/' + 'class.txt',
-        mode='test',
-        transforms=AugDict,
-        size=args.imgSize
-    )
-
-    # dataloader for in-distribution data
-    testloader = DataLoader(
-        testset,
-        batch_size=args.batch,
-        shuffle=True,
-        num_workers=args.worker
-    )
-
-    return testloader
+    args.data_root = root + '/' + dataName
+    return buildLoader(args, mode='test')
 
 
 def CreateSyntheticOutDistLoader(dataName):
@@ -117,23 +103,9 @@ def CreateSyntheticOutDistLoader(dataName):
     create out-dist (synthetic) dataloader e.g. gaussian
 
     '''
-    # dataset for out-of-distribution data
-    testset = SyntheticDataset(
-        dataName=dataName,
-        num_examples=10000,
-        transforms=AugDict,
-        size=args.imgSize
-    )
-
-    # loader for out-of-distribution data
-    testloader = DataLoader(
-        testset,
-        batch_size=args.batch,
-        shuffle=True,
-        num_workers=args.worker
-    )
-
-    return testloader
+    root = '/usr/share/dataset'
+    args.data_root = root + '/' + dataName
+    return buildLoader(args, mode='syn')
 
 
 def Test(loader, in_dist=False):
@@ -180,7 +152,7 @@ def Test(loader, in_dist=False):
     return stats
 
 
-def GetScore(stats, method='msp'):
+def GetScore(stats, method='MSP'):
     """
     stats: {"rot_0": {"prob": np.array(10000, 10)}, "rot_90": {"prob": np.array(10000, 10)}, ...}
     given a set of prob score and return the confidence score.
@@ -194,13 +166,6 @@ def GetScore(stats, method='msp'):
 
         """
         score = np.max(stats[AugName[0]]["prob"], axis=1)
-
-    # elif method == 'MinMax':
-    #     score_set = np.zeros((dataNum, len(stats)), dtype=np.float32)
-    #     for ix, t in enumerate(AugName):
-    #         score_set[:, ix] = np.max(stats[t]["prob"], axis=1)
-
-    #     score = np.min(score_set, axis=1)
 
     elif method == 'JSD':
         H = np.zeros(args.classNum, dtype=np.float32)
@@ -256,41 +221,11 @@ def GetScore(stats, method='msp'):
             score_set[:, ix] = stats[t]["prob"][np.arange(dataNum), index]
         score = np.mean(score_set, axis=1)
 
-    elif method == "Entropy":
-        score = np.zeros((dataNum, args.classNum), dtype=np.float32)
-        for ix, t in enumerate(AugName):
-            score += stats[t]["prob"]
-        score = np.exp(score) / (np.sum(np.exp(score), axis=1).reshape(-1, 1))  # prob
-        # score += 1e-15  # numerical stability
-        score = -1 * score * np.log(score)
-        score = np.sum(score, axis=1) / np.log(args.classNum)  # 0 <= score <= 1
-        score = 1 - score
-
     return score
 
 
 if __name__ == "__main__":
-
-    # ========== [param] ==========
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--batch", type=int, default=200, help="batch size")
-    parser.add_argument("--classNum", type=int, default=10, help="class number")
-    parser.add_argument("--imgSize", type=int, default=32, help="size of input image")
-    parser.add_argument("--InData", type=str, default="/usr/share/dataset/cifar10", help="root dir of dataset")
-    parser.add_argument("--ckpt", type=str, default="last.pt")
-    parser.add_argument("--worker", type=int, default=4, help="number of subprocess for loading data")
-    parser.add_argument("--store_dir", type=str, default='.')
-    parser.add_argument("--model", type=str, default="w402", help="model used for training")
-    parser.add_argument("--num_eval", type=int, default=1, help="number of testing")
-    parser.add_argument("--vis", type=int, default=0, help="visualize loader")
-    parser.add_argument("--method", type=str, default='msp', help="method for eval")
-    parser.add_argument("--rot", type=int, default=4, help="how many different angles for rotations")
-    parser.add_argument("--assume", type=int, default=0)
-
-    args = parser.parse_args()
-    for arg in vars(args):
-        print(arg, '===>', getattr(args, arg))
-
+    args = det_cfg
     torch.manual_seed(1)  # for reprodictivity
     np.random.seed(1)
     mean = [0.5] * 3  # data normal mean
@@ -300,19 +235,15 @@ if __name__ == "__main__":
     DetResult = {}  # out-of-distribution detection result
 
     # prepare model
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")  # gpu
-    if args.model == "w402":
-        model = WideResNet(depth=40,
-                           num_classes=args.classNum,
-                           widen_factor=2,
-                           dropRate=0.3,
-                           final_pool=args.imgSize // 4)
-    ckpt = torch.load(args.ckpt)  # checkpoint
-    model.load_state_dict(ckpt["cnn"])  # load weights
+    device = getDevice()
+    model = buildModel(args)
+
+    # ckpt = torch.load(args.ckpt)  # checkpoint
+    # model.load_state_dict(ckpt["cnn"])  # load weights
     model.to(device)  # model to gpu
     criterion = nn.CrossEntropyLoss()  # loss funcution
     AugName = []
-    AugDict = {}
+    AugDict = OrderedDict()
     for i in range(args.rot):
         AugName.append("rot_{}".format(int(i * 360 / args.rot)))
         AugDict["rot_{}".format(int(i * 360 / args.rot))] = Rot(int(i * 360 / args.rot))
@@ -322,12 +253,12 @@ if __name__ == "__main__":
 
     # prepare in-dist data ans its score
     IndataName = args.InData.split("/")[-1]  # cifar10
-    In_loader = CreateDataLoader(dataName=IndataName)
+    In_loader = CreateDataLoader(IndataName)
     all_score = OrderedDict()  # contain score for each dataset
     stats_in = Test(loader=In_loader, in_dist=True)  # predict prob for in-dist data
     score_in = GetScore(stats=stats_in, method=args.method)  # score for in-dist data
     scores_assumption = {"in": list(score_in), "out": []}
-    # all_score[IndataName] = histogram(score_in)
+    all_score[IndataName] = histogram(score_in)
 
     if IndataName == 'cifar10':
         OutdataNameList = ['texture', 'svhn', 'places365', 'lsun', 'cifar100']
@@ -344,7 +275,7 @@ if __name__ == "__main__":
                         "deterr": np.zeros(args.num_eval, dtype=np.float32),
                         "fpr": np.zeros(args.num_eval, dtype=np.float32)}
         for i in range(args.num_eval):
-            Out_loder = CreateDataLoader(dataName=d)
+            Out_loder = CreateDataLoader(d)
             stats_out = Test(loader=Out_loder, in_dist=False)  # predict prob for out-dist data
             score_out = GetScore(stats=stats_out, method=args.method)  # score for out-dist data
             label = np.zeros(score_in.shape[0] + score_out.shape[0], dtype=np.int32)
@@ -370,7 +301,7 @@ if __name__ == "__main__":
                         "deterr": np.zeros(args.num_eval, dtype=np.float32),
                         "fpr": np.zeros(args.num_eval, dtype=np.float32)}
         for i in range(args.num_eval):
-            Out_loder = CreateSyntheticOutDistLoader(dataName=d)
+            Out_loder = CreateSyntheticOutDistLoader(d)
             stats_out = Test(loader=Out_loder, in_dist=False)  # predict prob for out-dist data
             score_out = GetScore(stats=stats_out, method=args.method)  # score for out-dist data
             label = np.zeros(score_in.shape[0] + score_out.shape[0], dtype=np.int32)
@@ -422,7 +353,7 @@ if __name__ == "__main__":
     print(DetResult["avg"])
 
     # test our assumption using natural datasets
-    if args.assume:
-        print("length for in: ", len(scores_assumption["in"]))
-        print("length for out: ", len(scores_assumption["out"]))
-        validate_assumption(score=scores_assumption, name="assume_histogram_{}.png".format(args.method))
+    # if args.assume:
+    #     print("length for in: ", len(scores_assumption["in"]))
+    #     print("length for out: ", len(scores_assumption["out"]))
+    #     validate_assumption(score=scores_assumption, name="assume_histogram_{}.png".format(args.method))
