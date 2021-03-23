@@ -213,8 +213,8 @@ if __name__ == "__main__":
     model = buildModel(args)
 
     # uncomment the following for load weights
-    # ckpt = torch.load(args.ckpt)  # checkpoint
-    # model.load_state_dict(ckpt["cnn"])  # load weights
+    ckpt = torch.load(args.ckpt)  # checkpoint
+    model.load_state_dict(ckpt["cnn"])  # load weights
 
     model.to(device)  # model to gpu
     criterion = nn.CrossEntropyLoss()  # loss funcution
@@ -234,7 +234,7 @@ if __name__ == "__main__":
     stats_in = Test(loader=In_loader, in_dist=True)  # predict prob for in-dist data
     score_in = GetScore(stats=stats_in, method=args.method)  # score for in-dist data
     scores_assumption = {"in": list(score_in), "out": []}
-    all_score[IndataName] = histogram(score_in)
+    # all_score[IndataName] = histogram(score_in)
 
     if IndataName == 'cifar10':
         OutdataNameList = ['texture', 'svhn', 'places365', 'lsun', 'cifar100']
