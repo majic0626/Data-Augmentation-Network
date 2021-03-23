@@ -1,14 +1,7 @@
 """
-We usually augment images when training a nerual network for generalization. Take "flip" for example, an image
-'i' from a given class e.g. dog, and its flipped verion 'j' are both assined to the same class in training phase.
-The outputs of images and its flipped one from the dog class should be closed to each other in testing phase.
-What we are interested is when feeding a out-of-distribution image 'p' and its flipped one 'q' into neural network,
-Are the outputs of two images still closed to each other?
-
 1. Load in-dist data e.g. CIFAR10, and out-dist data e.g. Places365
 2. Feed them into model and get score
 3. Evaluate the score with out-of-distribution detector.
-
 
 """
 import torch
