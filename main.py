@@ -14,7 +14,7 @@ from solver.build import getOptim
 from solver.lr_schduler import adjust_lr
 from engine.trainer import Train
 from engine.tester import Test
-from utils.tools import timeConvert, getDevice
+from utils.tools import timeConvert, getDevice, record_saver
 
 
 if __name__ == "__main__":
@@ -57,3 +57,4 @@ if __name__ == "__main__":
         hc, mc, sc = timeConvert(t_cost)  # h:m:s cost
         ht, mt, st = timeConvert(t_cost * (args.epoch - i))  # h:m:s total
         print("Time: {}h:{}m:{}s / Total time: {}h:{}m:{}s".format(hc, mc, sc, ht, mt, st))
+        record_saver(record, args)
