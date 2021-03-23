@@ -1,6 +1,7 @@
 # utils.py
 import numpy as np
 import cv2
+import json
 
 
 def visualize(loader, path, size=8):
@@ -43,3 +44,8 @@ def timeConvert(s):
     M = s % 3600 // 60
     S = s % 60
     return H, M, S
+
+
+def record_saver(record, path):
+    with open(path, 'w') as f:
+        json.dump(record, f)

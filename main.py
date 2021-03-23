@@ -3,11 +3,9 @@
 given a set of augmentation for an image...then training a model.
 
 """
-import torch.optim as optim
 import torch
 import torch.nn as nn
 import numpy as np
-import json
 import time
 from configs.train_config import train_cfg
 from data.build import buildLoader
@@ -17,11 +15,6 @@ from solver.lr_schduler import adjust_lr
 from engine.trainer import Train
 from engine.tester import Test
 from utils.tools import timeConvert, getDevice
-
-
-def record_saver(record, path):
-    with open(path, 'w') as f:
-        json.dump(record, f)
 
 
 if __name__ == "__main__":
