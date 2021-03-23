@@ -6,12 +6,8 @@ import torchvision.transforms as trn
 from torch.utils.data import Dataset
 from PIL import Image
 from skimage.filters import gaussian as gblur
-<<<<<<< HEAD:data/dataset.py
 from data.augment import Rot
 from collections import OrderedDict
-=======
-from data.Augment import Rot
->>>>>>> 835fb7b115f7cc6704b5714fb644d4e2017186c0:data/dataset.py
 
 
 class ImageDataset(Dataset):
