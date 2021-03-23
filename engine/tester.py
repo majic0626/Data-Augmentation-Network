@@ -35,4 +35,4 @@ def Test(args, ep, testloader, model, criterion, record, best_acc):
             torch.save({"cnn": model.state_dict(), "epoch": ep}, args.dir_save_ckpt + '/' + "best.pt")
         print("save the last model: {} || best model: {}".format(test_acc, best_acc))
         torch.save({"cnn": model.state_dict(), "epoch": ep}, args.dir_save_ckpt + '/' + "last.pt")
-        record_saver(record, args.dir_save_log + '/' + "clf.txt")
+        record_saver(args, record)

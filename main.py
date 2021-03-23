@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 import time
-from configs.train_config import train_cfg
+from configs.train_config import args
 from data.build import buildLoader
 from modeling.build import buildModel
 from solver.build import getOptim
@@ -22,7 +22,6 @@ if __name__ == "__main__":
     # for reproductivity
     torch.manual_seed(1)
     np.random.seed(1)
-    args = train_cfg
     record = {"train_loss": [],
               "train_acc": [],
               "test_loss": [],
@@ -57,4 +56,3 @@ if __name__ == "__main__":
         hc, mc, sc = timeConvert(t_cost)  # h:m:s cost
         ht, mt, st = timeConvert(t_cost * (args.epoch - i))  # h:m:s total
         print("Time: {}h:{}m:{}s / Total time: {}h:{}m:{}s".format(hc, mc, sc, ht, mt, st))
-        record_saver(record, args)
